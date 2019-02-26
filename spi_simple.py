@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Bitbang'd SPI interface with an MCP3202 ADC device
+# Bitbang'd SPI interface with an MCP3008 ADC device
 # MCP3008 is 8-channel 10-bit analog to digital converter
 #  Connections are:
 #     CLK => 18  
@@ -23,11 +23,11 @@ def setupSpiPins(clkPin, misoPin, mosiPin, csPin):
     GPIO.setup(misoPin, GPIO.IN)
     GPIO.setup(mosiPin, GPIO.OUT)
     GPIO.setup(csPin, GPIO.OUT)
-
+     
 
 def readAdc(channel, clkPin, misoPin, mosiPin, csPin):
-    if (channel < 0) or (channel > 1):
-        print "Invalid ADC Channel number, must be between [0,7]"
+    if (channel < 0) or (channel > 7):
+        print("Invalid ADC Channel number, must be between [0,7]")
         return -1
         
     # Datasheet says chip select must be pulled high between conversions
@@ -40,17 +40,15 @@ def readAdc(channel, clkPin, misoPin, mosiPin, csPin):
     # read command is:
     # start bit = 1
     # single-ended comparison = 1 (vs. pseudo-differential)
-    # channel num bit = 0 or 1
-    # msb first = 1
-    read_command = None
-    if channel == 0:
-        read_command = 0b1101
-    else:
-        read_command = 0b1111
+    # channel num bit 2
+    # channel num bit 1
+    # channel num bit 0 (LSB)
+    read_command = 0x18
+    read_command |= channel
     
-    sendBits(read_command, 4, clkPin, mosiPin)
+    sendBits(read_command, 5, clkPin, mosiPin)
     
-    adcValue = recvBits(13, clkPin, misoPin)
+    adcValue = recvBits(12, clkPin, misoPin)
     
     # Set chip select high to end the read
     GPIO.output(csPin, GPIO.HIGH)
@@ -79,26 +77,21 @@ def sendBits(data, numBits, clkPin, mosiPin):
 def recvBits(numBits, clkPin, misoPin):
     '''Receives arbitrary number of bits'''
     retVal = 0
-    string = ""
     
     for bit in range(numBits):
-        
         # Pulse clock pin 
         GPIO.output(clkPin, GPIO.HIGH)
         GPIO.output(clkPin, GPIO.LOW)
         
         # Read 1 data bit in
         if GPIO.input(misoPin):
-            string += "1"
             retVal |= 0x1
-        else:
-            string += "0"
         
         # Advance input to next bit
         retVal <<= 1
     
     # Divide by two to drop the NULL bit
-    return string,(retVal/2)
+    return (retVal/2)
     
     
 if __name__ == '__main__':
@@ -107,9 +100,9 @@ if __name__ == '__main__':
         setupSpiPins(CLK, MISO, MOSI, CS)
     
         while True:
-            val = readAdc(1, CLK, MISO, MOSI, CS)
-            print "ADC Result: ", str(val)
-            time.sleep(1)
+            val = readAdc(0, CLK, MISO, MOSI, CS)
+            print("ADC Result: ", str(val))
+            time.sleep(.1)
     except KeyboardInterrupt:
         GPIO.cleanup()
-sys.exit(0)
+        sys.exit(0)
