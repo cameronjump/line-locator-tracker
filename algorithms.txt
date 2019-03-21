@@ -1,0 +1,55 @@
+#locating depth calculation
+
+val OFFSET #constant calculated from offset in preamp
+val K
+val DELAY
+val BUFFERSIZE
+
+loop()
+    var array_antenna1
+    var array_antenna2
+    for (i to BUFFERSIZE)
+        var reading1 = absolutevalue(read_adc_antenna1() - OFFSET)
+        var reading2 = absolutevalue(read_adc_antenna2() - OFFSET)
+
+        insert reading1 into array_antenna1
+        insert reading2 into array_antenna2
+
+        val amplitude1 = max(array_antenna1)
+        val amplitude2 = max(array_antenna2)
+
+        depth = k / (amplitude1/amplitude2 - 1)
+    sleep(DELAY)
+
+#tracking orientation calculation
+
+val OFFSET #constant calculated from offset in preamp
+val K
+val DELAY
+val BUFFERSIZE
+
+loop()
+    var array_antenna_x
+    var array_antenna_y
+    var array_antenna_z
+    for (i to BUFFERSIZE)
+        var reading_x = absolutevalue(read_adc_antenna_x() - OFFSET)
+        var reading_y = absolutevalue(read_adc_antenna_y() - OFFSET)
+        var reading_z = absolutevalue(read_adc_antenna_z() - OFFSET)
+
+        insert reading_x into array_antenna_x
+        insert reading_y into array_antenna_y
+        insert reading_z into array_atnenna_z
+
+        val amplitude_x = max(array_antenna_x)
+        val amplitude_y = max(array_antenna_y)
+        val amplitude_z = max(array_antenna_z)
+
+        #cartesian orientation values
+        val h_x = carteisan_dipole_calculation(amplitude_x, amplitude_y, amplitude_z)
+        val h_y = carteisan_dipole_calculation(amplitude_x, amplitude_y, amplitude_z)
+        val h_z = carteisan_dipole_calculation(amplitude_x, amplitude_y, amplitude_z)
+
+
+        depth = k / (amplitude1/amplitude2 - 1)
+    sleep(DELAY)
