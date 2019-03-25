@@ -1,21 +1,54 @@
-from subprocess import check_output, call
-from subprocess import Popen, PIPE
+from subprocess import check_output, call, Popen, PIPE, STDOUT
 #from ctypes import *
 #read_adc_wrapper = CDLL("./read_adc.so")
 import time
+import os
+
+
+pid = 0
+
+def read_adc_pipe(micros_between_readings, samples):
+    global pid
+
+    command = 'sudo ./read_adc_daemon {} {}'.format(micros_between_readings, samples)
+    print(command)
+
+    process = Popen(command, stdout=PIPE, stderr=STDOUT, shell=True)
+
+    while process.poll() is None:
+        for line in iter(process.stdout.readline, ""):
+            line = line.decode('UTF-8').replace('\n', '')
+            if line[0:2] == 'DS':
+                timestamps = []
+                values = []
+
+                samples = line.split(';')
+                for sample in samples:
+                    try:
+                        timestamp, value = sample.split(',',1)
+                        timestamps.append(int(timestamp))
+                        values.append(int(value))
+                    except:
+                        continue
+
+                if len(values) == 0:
+                    continue
+                del values[0]
+                del timestamps[0]
+
+                adjusted_timestamps = list(map(lambda x: x-timestamps[0], timestamps))
+                print(adjusted_timestamps)
+
+                index_max = max(range(len(values)), key=values.__getitem__)
+                print(values[index_max], timestamps[index_max])
+
 
 def read_adc(micros_between_readings, samples):
     #parse variables into C script command
     command = 'sudo ./read_adc {} {}'.format(micros_between_readings, samples)
     print(command)
 
-    '''p = Popen(command, stdout=PIPE)
-
-    for line in iter(p.stdout.readline,""):
-        print(line)
-
-
-    '''#run compiled C script to retrieve ADC values and timestamps
+    #run compiled C script to retrieve ADC values and timestamps
     read_time_start = time.time()
     foo = str(check_output(command, shell=True))
     read_time_finish = time.time()
@@ -44,9 +77,17 @@ def read_adc(micros_between_readings, samples):
     print(values)
 
 def main():
-    #read_adc_wrapper.init_gpio()
+    call('sudo killall read_adc_daemon', shell=True)
 
-    while True:
+    try:
+        read_adc_pipe(40, 10)
+    except Exception as e:
+        print(e)
+        call('sudo killall read_adc_daemon', shell=True)
+
+    #read_adc(40, 10)
+
+    '''while True:
         time_start = time.time()
         delta_time = 1.0/30.0
         time_next = time_start + delta_time
@@ -55,7 +96,7 @@ def main():
 
         sleep_duration = time_next-time.time()
         print(sleep_duration)
-        time.sleep(sleep_duration)
+        time.sleep(sleep_duration)'''
 
 if __name__== '__main__':
     main()
