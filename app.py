@@ -7,8 +7,9 @@ import os
 from threading  import Thread
 from queue import Queue, Empty
 
+from flask import Flask
 
-pid = 0
+current_value = 0
 
 def enqueue_output(process, queue):
     while process.poll() is None:
@@ -33,6 +34,7 @@ def read_adc_pipe(micros_between_readings, samples):
             process_line(line)
 
 def process_line(line):
+    global max
     if line[0:2] == 'DS':
         timestamps = []
         values = []
@@ -56,40 +58,16 @@ def process_line(line):
 
         index_max = max(range(len(values)), key=values.__getitem__)
         print(values[index_max], timestamps[index_max])
+        current_max = values[index_max]
 
-
-def read_adc(micros_between_readings, samples):
-    #parse variables into C script command
-    command = 'sudo ./read_adc {} {}'.format(micros_between_readings, samples)
-    print(command)
-
-    #run compiled C script to retrieve ADC values and timestamps
-    read_time_start = time.time()
-    foo = str(check_output(command, shell=True))
-    read_time_finish = time.time()
-    print(read_time_finish-read_time_start)
-    split_output = foo.split('\\n')
-
-    #parse C script output into timestamps and values
-    timestamps = []
-    values = []
-    recording = False
-    for line in split_output:
-        if line == 'DATA_OUTPUT_START':
-            recording = True
-        elif line == 'DATA_OUTPUT_STOP':
-            recording = False
-        elif recording == True:
-            timestamp, value = line.split(',',1)
-            timestamps.append(timestamp)
-            values.append(value)
-        elif 'samples in' in line or 'Initialization time' in line:
-            print(line)
-        else:
-            continue
-
-    print(timestamps)
-    print(values)
+def process_queue(queue):
+     while True:
+            try:
+                line = queue.get_nowait()
+            except Empty:
+                continue
+            else:
+                process_line(line)
 
 def main():
     call('sudo killall read_adc_daemon', shell=True)
@@ -97,17 +75,13 @@ def main():
     try:
         p = open_pipe(40,10)
         q = Queue()
-        t = Thread(target=enqueue_output, args=(p,q))
-        t.daemon = True
-        t.start()
+        t1 = Thread(target=enqueue_output, args=(p,q))
+        t1.daemon = True
+        t1.start()
 
-        while True:
-            try:
-                line = q.get_nowait()
-            except Empty:
-                continue
-            else:
-                process_line(line)
+        t2 = Thread(target=process_queue, args=(q,))
+        t2.daemon = True
+        t2.start()
         
     except Exception as e:
         print(e)
@@ -128,4 +102,6 @@ def main():
 
 if __name__== '__main__':
     main()
+    app = Flask(__name__)
+    app.run("0.0.0.0")
     
