@@ -4,43 +4,58 @@ from subprocess import check_output, call, Popen, PIPE, STDOUT
 import time
 import os
 
+from threading  import Thread
+from queue import Queue, Empty
+
 
 pid = 0
 
-def read_adc_pipe(micros_between_readings, samples):
-    global pid
+def enqueue_output(process, queue):
+    while process.poll() is None:
+        for line in iter(process.stdout.readline, ""):
+            line = line.decode('UTF-8').replace('\n', '')
+            queue.put(line)
+    process.close()
 
+def open_pipe(micros_between_readings, samples):
     command = 'sudo ./read_adc_daemon {} {}'.format(micros_between_readings, samples)
     print(command)
 
     process = Popen(command, stdout=PIPE, stderr=STDOUT, shell=True)
+    return process
+
+def read_adc_pipe(micros_between_readings, samples):
+    process = open_pipe(micros_between_readings, samples)
 
     while process.poll() is None:
         for line in iter(process.stdout.readline, ""):
             line = line.decode('UTF-8').replace('\n', '')
-            if line[0:2] == 'DS':
-                timestamps = []
-                values = []
+            process_line(line)
 
-                samples = line.split(';')
-                for sample in samples:
-                    try:
-                        timestamp, value = sample.split(',',1)
-                        timestamps.append(int(timestamp))
-                        values.append(int(value))
-                    except:
-                        continue
+def process_line(line):
+    if line[0:2] == 'DS':
+        timestamps = []
+        values = []
 
-                if len(values) == 0:
-                    continue
-                del values[0]
-                del timestamps[0]
+        samples = line.split(';')
+        for sample in samples:
+            try:
+                timestamp, value = sample.split(',',1)
+                timestamps.append(int(timestamp))
+                values.append(int(value))
+            except:
+                continue
 
-                adjusted_timestamps = list(map(lambda x: x-timestamps[0], timestamps))
-                print(adjusted_timestamps)
+        if len(values) == 0:
+            return
+        del values[0]
+        del timestamps[0]
 
-                index_max = max(range(len(values)), key=values.__getitem__)
-                print(values[index_max], timestamps[index_max])
+        adjusted_timestamps = list(map(lambda x: x-timestamps[0], timestamps))
+        print(adjusted_timestamps)
+
+        index_max = max(range(len(values)), key=values.__getitem__)
+        print(values[index_max], timestamps[index_max])
 
 
 def read_adc(micros_between_readings, samples):
@@ -80,7 +95,20 @@ def main():
     call('sudo killall read_adc_daemon', shell=True)
 
     try:
-        read_adc_pipe(40, 10)
+        p = open_pipe(40,10)
+        q = Queue()
+        t = Thread(target=enqueue_output, args=(p,q))
+        t.daemon = True
+        t.start()
+
+        while True:
+            try:
+                line = q.get_nowait()
+            except Empty:
+                continue
+            else:
+                process_line(line)
+        
     except Exception as e:
         print(e)
         call('sudo killall read_adc_daemon', shell=True)
