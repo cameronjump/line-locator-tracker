@@ -6,7 +6,9 @@ import os
 from threading  import Thread
 from queue import Queue, Empty
 
-from flask import Flask
+from flask import Flask, jsonify
+
+app = Flask(__name__)
 
 current_value = 0
 
@@ -17,9 +19,9 @@ def enqueue_output(process, queue):
             queue.put(line)
     process.close()
 
-def open_pipe(micros_between_readings, samples):
+def open_pipe(micros_between_readings, samples, sample_set_frequency):
     try:
-        command = 'sudo ./read_adc_daemon {} {}'.format(micros_between_readings, samples)
+        command = 'sudo ./read_adc_daemon {} {} {}'.format(micros_between_readings, samples, sample_set_frequency)
         print(command)
 
         process = Popen(command, stdout=PIPE, stderr=STDOUT, shell=True)
@@ -40,8 +42,13 @@ def read_adc_pipe(micros_between_readings, samples):
             line = line.decode('UTF-8').replace('\n', '')
             process_line(line)
 
+def to_voltage(x):
+    ADCRESOLUTION = 4095
+    SYSTEMVOLTAGE = 5
+    return (x/ADCRESOLUTION)*SYSTEMVOLTAGE
+
 def process_line(line):
-    global max
+    global current_value
     if line[0:2] == 'DS':
         timestamps = []
         values = []
@@ -61,11 +68,17 @@ def process_line(line):
         del timestamps[0]
 
         adjusted_timestamps = list(map(lambda x: x-timestamps[0], timestamps))
+        voltages = list(map(to_voltage, values))
+        formatted_voltages = ["%.3f" % voltage for voltage in voltages]
         print(adjusted_timestamps)
+        print(timestamps)
+        print(values)
+        print(voltages)
 
         index_max = max(range(len(values)), key=values.__getitem__)
-        print(values[index_max], timestamps[index_max])
-        current_max = values[index_max]
+        #print(str(voltages[index_max]) + 'V', str(timestamps[index_max]) + 'us')
+        current_value = ("%.3f" % voltages[index_max]) + 'V'
+        print(current_value)
 
 def process_queue(queue):
      while True:
@@ -76,9 +89,13 @@ def process_queue(queue):
             else:
                 process_line(line)
 
+@app.route('/api', methods=['GET'])
+def get_value():
+    return jsonify(title='Locating', value=current_value)
+
 def main():
     close_pipe()
-    p = open_pipe(40,10)
+    p = open_pipe(35,10,30)
     q = Queue()
     t1 = Thread(target=enqueue_output, args=(p,q))
     t1.daemon = True
@@ -91,8 +108,7 @@ def main():
 if __name__== '__main__':
     main()
 
-    #app = Flask(__name__)
-    #app.run("0.0.0.0")
+    app.run("0.0.0.0")
 
     while(True):
         continue

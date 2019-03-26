@@ -53,6 +53,8 @@ int REPEAT_MICROS = 40 ;
 
 int SAMPLES = 10000;  // Number of samples to take,
 
+int SAMPLE_SET_FREQUENCY = 30;
+
 int MISO[ADCS]={MISO1};//, MISO2, MISO3, MISO4, MISO5};
 
 rawSPI_t rawSPI =
@@ -184,11 +186,11 @@ int performSampleLoop() {
    */
 
    rwi = rawWaveInfo(wid);
-
+   /*
    printf("# cb %d-%d ool %d-%d del=%d ncb=%d nb=%d nt=%d\n",
       rwi.botCB, rwi.topCB, rwi.botOOL, rwi.topOOL, rwi.deleted,
       rwi.numCB,  rwi.numBOOL,  rwi.numTOOL);
-
+   */
    /*
       CBs are allocated from the bottom up.  As the wave is being
       transmitted the current CB will be between botCB and topCB
@@ -203,10 +205,10 @@ int performSampleLoop() {
    */
 
    cbs_per_reading = (float)rwi.numCB / (float)BUFFER;
-
+   /*
    printf("# cbs=%d per read=%.1f base=%d\n",
       rwi.numCB, cbs_per_reading, botCB);
-
+   */
    /*
       OOL are allocated from the top down. There are BITS bits
       for each ADC reading and BUFFER ADC readings.  The readings
@@ -214,8 +216,6 @@ int performSampleLoop() {
    */
 
    topOOL = rwi.topOOL;
-
-   printf("starting...\n");
 
    if (pause) time_sleep(pause); // Give time to start a monitor.
 
@@ -275,9 +275,7 @@ int performSampleLoop() {
    printf("# %d samples in %.1f seconds (%.0f/s)\n",
       SAMPLES, end-start, (float)SAMPLES/(end-start));
 
-   printf("ending...\n");
-
-   if (pause) time_sleep(pause);
+   //if (pause) time_sleep(pause);
 
    return 0;
 }
@@ -287,10 +285,13 @@ int main(int argc, char *argv[])
     fprintf(stderr, "My PID:%d\n", getpid());
     setpriority(PRIO_PROCESS, 0, -20);
 
-    if (argc > 2) {
+    if (argc > 3) {
         REPEAT_MICROS = (int) strtol(argv[1], NULL, 10);
         SAMPLES = (int) strtol(argv[2], NULL, 10);
+        SAMPLE_SET_FREQUENCY = (int) strtol(argv[3], NULL, 10);
     } else {return 1;}
+
+    int PERIOD = 1000000/SAMPLE_SET_FREQUENCY;
 
     fprintf(stderr, "REPEAT_MICROS %d SAMPLES %d\n", REPEAT_MICROS, SAMPLES);
     gpioCfgClock(/* micros */ 1, /* PWM */ 1, 0);
@@ -307,8 +308,12 @@ int main(int argc, char *argv[])
     gpioSetMode(SPI_SS,      PI_OUTPUT);
 
     while(1) {
-        performSampleLoop();
-        usleep(1000000);
+      long start = getMicrotime();
+      performSampleLoop();
+      long finish = getMicrotime();
+      int delay = finish - start;
+      printf(" execution time %dus\n",delay);
+      usleep(PERIOD);
     }
 
     gpioTerminate();
