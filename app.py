@@ -1,6 +1,5 @@
 from subprocess import check_output, call, Popen, PIPE, STDOUT
-#from ctypes import *
-#read_adc_wrapper = CDLL("./read_adc.so")
+import sys
 import time
 import os
 
@@ -19,11 +18,19 @@ def enqueue_output(process, queue):
     process.close()
 
 def open_pipe(micros_between_readings, samples):
-    command = 'sudo ./read_adc_daemon {} {}'.format(micros_between_readings, samples)
-    print(command)
+    try:
+        command = 'sudo ./read_adc_daemon {} {}'.format(micros_between_readings, samples)
+        print(command)
 
-    process = Popen(command, stdout=PIPE, stderr=STDOUT, shell=True)
-    return process
+        process = Popen(command, stdout=PIPE, stderr=STDOUT, shell=True)
+        return process
+    except Exception as e:
+        close_pipe()
+        print(e)
+        sys.exit(1)
+
+def close_pipe():
+    call('sudo killall read_adc_daemon', shell=True)
 
 def read_adc_pipe(micros_between_readings, samples):
     process = open_pipe(micros_between_readings, samples)
@@ -70,38 +77,26 @@ def process_queue(queue):
                 process_line(line)
 
 def main():
-    call('sudo killall read_adc_daemon', shell=True)
+    close_pipe()
+    p = open_pipe(40,10)
+    q = Queue()
+    t1 = Thread(target=enqueue_output, args=(p,q))
+    t1.daemon = True
+    t1.start()
 
-    try:
-        p = open_pipe(40,10)
-        q = Queue()
-        t1 = Thread(target=enqueue_output, args=(p,q))
-        t1.daemon = True
-        t1.start()
-
-        t2 = Thread(target=process_queue, args=(q,))
-        t2.daemon = True
-        t2.start()
-        
-    except Exception as e:
-        print(e)
-        call('sudo killall read_adc_daemon', shell=True)
-
-    #read_adc(40, 10)
-
-    '''while True:
-        time_start = time.time()
-        delta_time = 1.0/30.0
-        time_next = time_start + delta_time
-
-        read_adc(40, 10)
-
-        sleep_duration = time_next-time.time()
-        print(sleep_duration)
-        time.sleep(sleep_duration)'''
+    t2 = Thread(target=process_queue, args=(q,))
+    t2.daemon = True
+    t2.start()
 
 if __name__== '__main__':
     main()
-    app = Flask(__name__)
-    app.run("0.0.0.0")
+
+    #app = Flask(__name__)
+    #app.run("0.0.0.0")
+
+    while(True):
+        try:
+            continue
+        except:
+            close_pipe()
     
