@@ -3,6 +3,7 @@ package cameronjump.undergroundlocator
 import android.net.Uri
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
@@ -17,13 +18,13 @@ import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import java.util.*
-import kotlin.concurrent.schedule
 
 class MainActivity : AppCompatActivity() {
 
     private val TAG = "MainDebug"
 
     lateinit var service: APIService
+    var run = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,10 +34,13 @@ class MainActivity : AppCompatActivity() {
 
         ip.addTextChangedListener(object: TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                val ip = ip.text.toString()
+                val ip = "http://"+ip.text.toString()+":5000"
                 when (URLUtil.isValidUrl(ip)) {
-                    true -> service = APIService.create(ip)
-                }
+                    true -> {
+                        run = true
+                        service = APIService.create(ip)
+                        Log.d(TAG, ip)}
+                    }
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
@@ -46,13 +50,28 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        Timer().schedule(100){
-            retrieveValue()
+        callAsynchronousTask()
+    }
+
+    fun callAsynchronousTask() {
+        val handler = Handler()
+        val timer = Timer()
+        val doAsynchronousTask = object : TimerTask() {
+            override fun run() {
+                handler.post({
+                    try {
+                        retrieveValue()
+                    } catch (e: Exception) {
+                        Log.d(TAG, e.toString())
+                    }
+                })
+            }
         }
+        timer.schedule(doAsynchronousTask, 0, 250) //250ms
     }
 
     private fun retrieveValue() {
-        if(service != null) {
+        if(run) {
             val observable = service.getValue()
             observable.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -65,8 +84,6 @@ class MainActivity : AppCompatActivity() {
                         Log.d(TAG, "Error" + error.toString())
                     }
                 )
-
-
         }
     }
 
@@ -90,5 +107,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     data class Data(@SerializedName("title") val title:String, @SerializedName("value") val value:String)
+
+    override fun onResume() {
+        super.onResume()
+        run = true
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        run = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        run = false
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        run = false
+    }
 
 }
