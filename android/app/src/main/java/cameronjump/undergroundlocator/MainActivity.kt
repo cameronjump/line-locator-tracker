@@ -8,6 +8,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.webkit.URLUtil
+import android.widget.Toast
 import com.google.gson.annotations.SerializedName
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -25,6 +26,7 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var service: APIService
     var run = false
+    var concurrentFails = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +41,7 @@ class MainActivity : AppCompatActivity() {
                 when (URLUtil.isValidUrl(ip) && ip_edit.text.toString() == "") {
                     true -> {
                         run = true
+                        concurrentFails = 0
                         service = APIService.create(ip)
                         Log.d(TAG, ip)}
                     }
@@ -53,18 +56,18 @@ class MainActivity : AppCompatActivity() {
         callAsynchronousTask()
     }
 
-    fun callAsynchronousTask() {
+    private fun callAsynchronousTask() {
         val handler = Handler()
         val timer = Timer()
         val doAsynchronousTask = object : TimerTask() {
             override fun run() {
-                handler.post({
+                handler.post {
                     try {
                         retrieveValue()
                     } catch (e: Exception) {
                         Log.d(TAG, e.toString())
                     }
-                })
+                }
             }
         }
         timer.schedule(doAsynchronousTask, 0, 250) //250ms
@@ -77,16 +80,23 @@ class MainActivity : AppCompatActivity() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     { result -> Log.d(TAG, result.toString())
+                        concurrentFails = 0
                         mode_text.text = result.mode
                         value_text.text = result.value + result.unit
                         extra_text.text = result.extra
                         status_text.background = getDrawable(R.drawable.status_on)
                         status_text.text = "Connected"
                     },
-                    { error ->
-                        Log.d(TAG, "Error" + error.toString())
-                        status_text.background = getDrawable(R.drawable.status_off)
-                        status_text.text = "Disconnected"
+                    { error -> Log.d(TAG, "Error" + error.toString())
+                        concurrentFails += 1
+                        if(concurrentFails == 5) {
+                            Toast.makeText(this, error.toString(), Toast.LENGTH_LONG).show()
+                            mode_text.text = ""
+                            value_text.text = ""
+                            extra_text.text = ""
+                            status_text.background = getDrawable(R.drawable.status_off)
+                            status_text.text = "Disconnected"
+                        }
                     }
                 )
         }
