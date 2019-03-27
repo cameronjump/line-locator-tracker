@@ -30,19 +30,19 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        service = APIService.create("http://phoney")
+        ip_edit.append(getString(R.string.default_ip))
+        service = APIService.create("http://"+ip_edit.text.toString()+":5000")
 
-        ip.addTextChangedListener(object: TextWatcher {
+        ip_edit.addTextChangedListener(object: TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                val ip = "http://"+ip.text.toString()+":5000"
-                when (URLUtil.isValidUrl(ip)) {
+                val ip = "http://"+ip_edit.text.toString()+":5000"
+                when (URLUtil.isValidUrl(ip) && ip_edit.text.toString() == "") {
                     true -> {
                         run = true
                         service = APIService.create(ip)
                         Log.d(TAG, ip)}
                     }
             }
-
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
             }
 
@@ -77,36 +77,20 @@ class MainActivity : AppCompatActivity() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     { result -> Log.d(TAG, result.toString())
-                        text.text = result.title
-                        contents.text = result.value
+                        mode_text.text = result.mode
+                        value_text.text = result.value + result.unit
+                        extra_text.text = result.extra
+                        status_text.background = getDrawable(R.drawable.status_on)
+                        status_text.text = "Connected"
                     },
                     { error ->
                         Log.d(TAG, "Error" + error.toString())
+                        status_text.background = getDrawable(R.drawable.status_off)
+                        status_text.text = "Disconnected"
                     }
                 )
         }
     }
-
-    interface APIService {
-
-        @GET("/api")
-        fun getValue() : Observable<Data>
-
-        companion object {
-            fun create(ip: String): APIService {
-
-                val retrofit = Retrofit.Builder()
-                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .baseUrl(ip)
-                    .build()
-
-                return retrofit.create(APIService::class.java)
-            }
-        }
-    }
-
-    data class Data(@SerializedName("title") val title:String, @SerializedName("value") val value:String)
 
     override fun onResume() {
         super.onResume()

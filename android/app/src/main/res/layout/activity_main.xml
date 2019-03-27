@@ -14,31 +14,59 @@
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             android:hint="IP Address"
-            android:id="@+id/ip"
+            android:id="@+id/ip_edit"
             android:layout_margin="20dp"/>
+
+    <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Disconnected"
+            android:id="@+id/status_text"
+            android:textSize="20sp"
+            android:background="@drawable/status_off"
+            android:padding="10dp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:textColor="#ffffff"
+            android:layout_margin="20dp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ip_edit"/>
 
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Remote View"
-            android:id="@+id/text"
+            android:id="@+id/mode_text"
             android:textSize="20sp"
             android:textStyle="italic"
             android:layout_margin="20dp"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/ip"/>
+            app:layout_constraintTop_toBottomOf="@+id/status_text"/>
 
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Error"
-            android:id="@+id/contents"
+            android:id="@+id/value_text"
             android:layout_margin="20dp"
             android:textSize="40sp"
             android:textStyle="bold"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/text"/>
+            app:layout_constraintTop_toBottomOf="@id/mode_text"/>
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Error"
+            android:id="@+id/extra_text"
+            android:layout_margin="20dp"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/value_text"/>
 
 </android.support.constraint.ConstraintLayout>
