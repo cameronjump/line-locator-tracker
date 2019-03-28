@@ -35,19 +35,17 @@ a unique MISO line.
 
 #define SPI_SS 8 // GPIO for slave select.
 
-#define ADCS 1    // Number of connected MCP3202.
-
 #define BITS 12            // Bits per reading.
 #define BX 6               // Bit position of data bit B11.
 #define B0 (BX + BITS - 1) // Bit position of data bit B0.
 
 #define MISO1 9   // ADC 1 MISO.
 #define MISO2 26  //     2
-#define MISO3 13  //     3
-#define MISO4 23  //     4
-#define MISO5 24  //     5
+#define MISO3 19  //     3
 
 #define BUFFER 250       // Generally make this buffer as large as possible.
+
+#define ADCS 3
 
 int REPEAT_MICROS = 40 ;
 
@@ -55,7 +53,7 @@ int SAMPLES = 10000;  // Number of samples to take,
 
 int SAMPLE_SET_FREQUENCY = 30;
 
-int MISO[ADCS]={MISO1};//, MISO2, MISO3, MISO4, MISO5};
+int MISO[ADCS]={MISO1, MISO2, MISO3};//, MISO2, MISO3, MISO4, MISO5};
 
 rawSPI_t rawSPI =
 {
@@ -256,11 +254,11 @@ int performSampleLoop() {
 
             val = (rx[i*2]<<4) + (rx[(i*2)+1]>>4);
             long timestamp = getMicrotime();
+            fprintf(stderr,"%d,", i);
             fprintf(stderr,"%ld,", timestamp);
             fprintf(stderr,"%d", val);
+            fprintf(stderr,";");
          }
-
-         fprintf(stderr,";");
 
          if (++reading >= BUFFER) reading = 0;
       }
@@ -289,7 +287,7 @@ int main(int argc, char *argv[])
         REPEAT_MICROS = (int) strtol(argv[1], NULL, 10);
         SAMPLES = (int) strtol(argv[2], NULL, 10);
         SAMPLE_SET_FREQUENCY = (int) strtol(argv[3], NULL, 10);
-    } else {return 1;}
+    } 
 
     int PERIOD = 1000000/SAMPLE_SET_FREQUENCY;
 

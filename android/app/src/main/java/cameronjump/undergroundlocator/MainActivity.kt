@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
                     { result -> Log.d(TAG, result.toString())
                         concurrentFails = 0
                         mode_text.text = result.mode
-                        value_text.text = result.value + result.unit
+                        value_text.text = "%s%s".format(result.value, result.unit)
                         extra_text.text = result.extra
                         status_text.background = getDrawable(R.drawable.status_on)
                         status_text.text = "Connected"
