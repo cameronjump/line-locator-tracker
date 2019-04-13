@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">underground-locator</string>
-    <string name="default_ip">10.42.0.77</string>
+    <string name="default_ip">10.0.0.1</string>
 </resources>

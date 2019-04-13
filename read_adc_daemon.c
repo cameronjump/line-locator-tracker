@@ -33,15 +33,15 @@ a unique MISO line.
 #include <sys/resource.h>
 
 
-#define SPI_SS 8 // GPIO for slave select.
+#define SPI_SS 4 // GPIO for slave select.
 
 #define BITS 12            // Bits per reading.
 #define BX 6               // Bit position of data bit B11.
 #define B0 (BX + BITS - 1) // Bit position of data bit B0.
 
-#define MISO1 9   // ADC 1 MISO.
-#define MISO2 26  //     2
-#define MISO3 19  //     3
+#define MISO1 17   // ADC 1 MISO.
+#define MISO2 27  //     2
+#define MISO3 22  //     3
 
 #define BUFFER 250       // Generally make this buffer as large as possible.
 
@@ -57,8 +57,8 @@ int MISO[ADCS]={MISO1, MISO2, MISO3};//, MISO2, MISO3, MISO4, MISO5};
 
 rawSPI_t rawSPI =
 {
-   .clk     =  11, // GPIO for SPI clock.
-   .mosi    = 10, // GPIO for SPI MOSI.
+   .clk     =  2, // GPIO for SPI clock.
+   .mosi    = 3, // GPIO for SPI MOSI.
    .ss_pol  =  1, // Slave select resting level.
    .ss_us   =  1, // Wait 1 micro after asserting slave select.
    .clk_pol =  0, // Clock resting level.

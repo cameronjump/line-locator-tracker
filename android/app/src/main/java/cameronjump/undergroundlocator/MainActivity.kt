@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         ip_edit.addTextChangedListener(object: TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 val ip = "http://"+ip_edit.text.toString()+":5000"
-                when (URLUtil.isValidUrl(ip) && ip_edit.text.toString() == "") {
+                when (URLUtil.isValidUrl(ip) && ip_edit.text.toString() != "") {
                     true -> {
                         run = true
                         concurrentFails = 0

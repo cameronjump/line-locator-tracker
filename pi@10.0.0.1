@@ -53,7 +53,6 @@ def read_adc_pipe(micros_between_readings, samples):
 
 def process_line(line):
     global current_value, value0, value1, value2, past_values0, past_values1, past_values2
-
     if line[0:2] == 'DS':
         timestamps0 = []
         values0 = []
@@ -96,11 +95,10 @@ def process_line(line):
 
         adjusted_values0 = list(map(lambda x: x-reference_value, values0))
         adjusted_values1 = list(map(lambda x: x-reference_value, values1))
-        adjusted_values0 = list(map(abs, adjusted_values0))
-        adjusted_values1 = list(map(abs, adjusted_values1))
 
         #print(string_format_voltages(voltages0))
         #print(string_format_voltages(voltages1))
+        #print(string_format_voltages(voltages2))
 
         #index_max0 = index_of_max(values0)
         #index_max1 = index_of_max(values1)
@@ -108,8 +106,8 @@ def process_line(line):
 
 
         #print(str(voltages[index_max]) + 'V', str(timestamps[index_max]) + 'us')
-        past_values0.append(sum(adjusted_values0)/len(adjusted_values0))
-        past_values1.append(sum(adjusted_values1)/len(adjusted_values1))
+        past_values0.append(max(values0))
+        past_values1.append(max(values1))
         past_values2.append(reference_value)
 
         if(len(past_values0) > 10):
@@ -123,15 +121,10 @@ def process_line(line):
         value1 = sum(past_values1)/len(past_values1)
         value2 = sum(past_values2)/len(past_values2)
 
-        #print('0',past_values0)
-        #print('1',past_values1)
-        #print('2',past_values2)
-
-        k = 3.78125 #in
+        k = 3.5 #in
         #s1 value 0, s2 value1, ref value3
-        ratio = to_voltage(value0)/to_voltage(value1)
-        print('v0',value0)
-        print('v1',value1)
+        current_value = value0
+        ratio = value0/value1
         d1 = k/ (ratio - 1)
         current_value = d1
 
@@ -165,17 +158,17 @@ def process_queue(queue):
 def get_value():
     global current_value, value0, value1, value2
     mode = 'Locating'
-    value = ("%.3f" % float(current_value/12))
+    value = ("%.3f" % current_value/12)
     unit = 'ft'
     extra = ''
     extra += 'Value 0    ' + str(int(value0)) +'    ' + ("%.3f" % to_voltage(value0))+'V\n'
     extra += 'Value 1    ' + str(int(value1)) +'    ' + ("%.3f" % to_voltage(value1))+'V\n'
-    extra += 'Reference Value    ' + str(int(value2)) +'    ' + ("%.3f" % to_voltage(value2))+'V\n'    
+    extra += 'Value 2    ' + str(int(value2)) +'    ' + ("%.3f" % to_voltage(value2))+'V\n'    
     return jsonify(mode=mode, value=value, unit=unit, extra=extra)
 
 def main():
     close_pipe()
-    p = open_pipe(80,10,30)
+    p = open_pipe(40,10,30)
     q = Queue()
     t1 = Thread(target=enqueue_output, args=(p,q))
     t1.daemon = True
@@ -188,7 +181,7 @@ def main():
 if __name__== '__main__':
     main()
 
-    #app.run("0.0.0.0")
+    app.run("0.0.0.0")
 
     while(True):
         continue
