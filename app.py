@@ -2,6 +2,7 @@ from subprocess import check_output, call, Popen, PIPE, STDOUT
 import sys
 import time
 import os
+from enum import Enum
 
 from threading  import Thread
 from queue import Queue, Empty
@@ -12,6 +13,9 @@ import pygame
 from pygame.locals import *
 
 os.putenv('SDL_FBDEV', '/dev/fb1')
+os.putenv('SDL_VIDEODRIVER', 'fbcon')
+os.putenv('SDL_MOUSEDRV', 'TSLIB')
+os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
 
 app = Flask(__name__)
 
@@ -33,7 +37,7 @@ def enqueue_output(process, queue):
 
 def open_pipe(micros_between_readings, samples, sample_set_frequency):
     try:
-        path = os.path.join(os.path.expanduser('~'),'underground-locator','read_adc_daemon')
+        path = '/home/pi/underground-locator/read_adc_daemon'
         print(path)
         command = 'sudo {} {} {} {}'.format(path, micros_between_readings, samples, sample_set_frequency)
         print(command)
@@ -135,10 +139,12 @@ def process_line(line):
         k = 3.78125 #in
         #s1 value 0, s2 value1, ref value3
         ratio = to_voltage(value0)/to_voltage(value1)
-        print('v0',value0)
-        print('v1',value1)
+        #print('v0',value0)
+        #print('v1',value1)
         d1 = k/ (ratio - 1)
         current_value = d1
+    #elif line != '': 
+    #    print(line)
 
 def to_voltage(x):
     ADCRESOLUTION = 4095
@@ -254,6 +260,7 @@ def main():
     t2 = Thread(target=process_queue, args=(q,))
     t2.daemon = True
     t2.start()
+
 
 if __name__== '__main__':
     main()

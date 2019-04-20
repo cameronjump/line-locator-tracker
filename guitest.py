@@ -4,10 +4,10 @@ import os
 import sys
 from enum import Enum
 
-'''os.putenv('SDL_FBDEV', '/dev/fb1')
+os.putenv('SDL_FBDEV', '/dev/fb1')
 os.putenv('SDL_VIDEODRIVER', 'fbcon')
 os.putenv('SDL_MOUSEDRV', 'TSLIB')
-os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')'''
+os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
 
 #frequencies 
 #Locating 8.19
@@ -18,9 +18,10 @@ class Mode(Enum):
         TRACKING12 = 'Tracking 12.04Khz'
         TRACKING29 = 'Tracking 29.43Khz'
 
-def display_text(screen, text, fontColor, backgroundColor, location, font): #returns rect
+def display_text(screen, text, fontColor, backgroundColor, location, width, font): #returns rect
     text_surface = font.render(text, False, fontColor)
-    text_rect = text_surface.get_rect(topleft = location)
+    #text_rect = text_surface.get_rect(topleft = location)
+    text_rect = pygame.Rect(location, (width, 22))
     screen.fill(backgroundColor, text_rect)
     screen.blit(text_surface,text_rect.topleft)
     return text_rect
@@ -58,7 +59,7 @@ def main():
 
     #setup font
     pygame.font.init()
-    buttonFont = pygame.font.SysFont('default', 14)
+    buttonFont = pygame.font.SysFont('default', 17)
     textFont = pygame.font.SysFont('default', 30)
     numberFont = pygame.font.SysFont('default', 40)
 
@@ -87,8 +88,8 @@ def main():
 
     #mode buttons
     locating8_button = create_button(screen, 'Locating 8.19Khz', WHITE, ORANGE, (20, 210), (140,40), buttonFont)
-    tracking12_button = create_button(screen, 'Tracking 12.04Khz', WHITE, ORANGE, (177, 210), (140,40), buttonFont)
-    tracking29_button = create_button(screen, 'Tracking 29.43Khz', WHITE, ORANGE, (177, 260), (140,40), buttonFont)
+    tracking12_button = create_button(screen, 'Tracking 12.04Khz', WHITE, ORANGE, (167, 210), (140,40), buttonFont)
+    tracking29_button = create_button(screen, 'Tracking 29.43Khz', WHITE, ORANGE, (167, 260), (140,40), buttonFont)
 
     #gain
     textsurface = buttonFont.render('Gain', False, BLACK)
@@ -97,11 +98,11 @@ def main():
     plus_gain_button = create_button(screen, '+', WHITE, ORANGE, (120, 260), (40,40), numberFont)
 
     #calibration
-    calibration_button = create_button(screen, 'Calibrate', WHITE, ORANGE, (334, 210), (140,40), buttonFont)
+    calibration_button = create_button(screen, 'Calibrate', WHITE, ORANGE, (314, 210), (140,40), buttonFont)
     textsurface = buttonFont.render('Distance', False, BLACK)
-    screen.blit(textsurface,(383,265))
-    minus_calibration_button = create_button(screen, '-', WHITE, ORANGE, (334, 260), (40,40), numberFont)
-    plus_calibration_button = create_button(screen, '+', WHITE, ORANGE, (434, 260), (40,40), numberFont)
+    screen.blit(textsurface,(359,265))
+    minus_calibration_button = create_button(screen, '-', WHITE, ORANGE, (314, 260), (40,40), numberFont)
+    plus_calibration_button = create_button(screen, '+', WHITE, ORANGE, (414, 260), (40,40), numberFont)
 
     pygame.display.update()
 
@@ -113,13 +114,19 @@ def main():
 
         if update_mode_request:
             print(current_mode.value)
-            current_mode_rect = display_text(screen, current_mode.value, BLACK , BACKGROUND_COLOR, (300,10), textFont)
+            current_mode_rect = display_text(screen, current_mode.value, BLACK , BACKGROUND_COLOR, (300,10), 180, textFont)
             rects.append(current_mode_rect)
+
+            if current_mode == Mode.Locating:
+                
             update_mode_request = False
 
         if update_calibration_distance_request:
             calibration_string = '{}in'.format(calibration_distance)
-            calibration_rect = display_text(screen, calibration_string, BLACK , BACKGROUND_COLOR, (377,280), textFont)
+            calibration_rect = pygame.Rect((357,280), (57,20))
+            text_surface = textFont.render(calibration_string, False, BLACK)
+            screen.fill(BACKGROUND_COLOR, calibration_rect)
+            screen.blit(text_surface,(357,280))
             rects.append(calibration_rect)
             update_calibration_distance = False
 
@@ -128,27 +135,35 @@ def main():
                 calibration_string = 'Calibration Value = UNSET'
             else:
                 calibration_string = 'Calibration Value = {}'.format(calibration_value)
-            calibration_value_rect = display_text(screen, calibration_string, BLACK , BACKGROUND_COLOR, (150,15), buttonFont)
+            text_surface = buttonFont.render(calibration_string, False, BLACK)
+            calibration_value_rect = pygame.Rect((150,15), (140,20))
+            screen.fill(BACKGROUND_COLOR, calibration_value_rect)
+            screen.blit(text_surface,(150,15))
             rects.append(calibration_value_rect)
             update_calibration_distance = False
 
         if update_gain_request:
-            gain_rect = display_text(screen, str(gain_value), BLACK , BACKGROUND_COLOR, (77,280), textFont)
+            text_surface = textFont.render(str(gain_value), False, BLACK)
+            gain_rect = pygame.Rect((77,280), (30,20))
+            screen.fill(BACKGROUND_COLOR, gain_rect)
+            screen.blit(text_surface,(77,280))
             rects.append(gain_rect)
             update_calibration_distance = False
 
 
 
         
-        depth_rect = display_text(screen, str(increment), BLACK , BACKGROUND_COLOR, (20,90), numberFont)
-        value0_rect = display_text(screen, str(increment), BLACK , BACKGROUND_COLOR, (380,85), numberFont)
-        value1_rect = display_text(screen, str(increment), BLACK , BACKGROUND_COLOR, (380,125), numberFont)
-        ref_rect = display_text(screen, str(increment), BLACK , BACKGROUND_COLOR, (380,165), numberFont)
-        rects += [depth_rect, value0_rect, value1_rect, ref_rect]
+        depth_rect = display_text(screen, str(increment), BLACK , BACKGROUND_COLOR, (20,90), 100, numberFont)
+        message_rect = display_text(screen, "TEAM1FTW", BLACK , BACKGROUND_COLOR, (20,170), 200, textFont)
+        value0_rect = display_text(screen, str(increment), BLACK , BACKGROUND_COLOR, (380,85), 100, numberFont)
+        value1_rect = display_text(screen, str(increment), BLACK , BACKGROUND_COLOR, (380,125), 100, numberFont)
+        ref_rect = display_text(screen, str(increment), BLACK , BACKGROUND_COLOR, (380,165), 100, numberFont)
+        rects += [depth_rect, message_rect, value0_rect, value1_rect, ref_rect]
+
 
         pygame.display.update(rects)
-            
         for event in pygame.event.get():
+            #handle button presses
             if event.type == pygame.MOUSEBUTTONUP:
                 pos = pygame.mouse.get_pos()
                 if locating8_button.collidepoint(pos):
@@ -161,17 +176,22 @@ def main():
                     current_mode = Mode.TRACKING29
                     update_mode_request = True 
                 elif calibration_button.collidepoint(pos):
-                    print('Calibration')
+                    calibration_value = calibration_distance
+                    update_calibration_value_request
                 elif minus_gain_button.collidepoint(pos):
-                    print('Decrease Gain')
+                    if gain_value > 0:
+                        gain_value -= 1
+                        update_gain_request = True
                 elif plus_gain_button.collidepoint(pos):
-                    print('Increase Gain')   
+                    gain_value += 1
+                    update_gain_request = True  
                 elif minus_calibration_button.collidepoint(pos):
-                    calibration_distance -= 1
-                    update_calibration_distance = True
+                    if calibration_distance > 0:
+                        calibration_distance -= 1
+                        update_calibration_distance_request = True
                 elif plus_calibration_button.collidepoint(pos):
                     calibration_distance += 1
-                    update_calibration_distance = True        
+                    update_calibration_distance_request = True        
             elif event.type == pygame.QUIT:
                 pygame.display.quit()
                 pygame.quit()  # Hangs here
