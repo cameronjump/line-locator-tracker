@@ -17,8 +17,6 @@ from pipe import *
 
 import RPi.GPIO as GPIO
 
-app = Flask(__name__)
-
 os.putenv('SDL_FBDEV', '/dev/fb1')
 os.putenv('SDL_VIDEODRIVER', 'fbcon')
 os.putenv('SDL_MOUSEDRV', 'TSLIB')
@@ -38,33 +36,11 @@ GAINCSPIN = 13
 GAINCLKPIN = 5
 GAINDATAPIN = 26
 
-calibration_distance = 120 #distance in inches
-calibration_value = 1
-gain_value = 1
-
-#button update requests
-update_mode_request = True
-update_calibration_distance_request = True
-update_calibration_value_request = True
-update_gain_request = True
-
-
-#frequencies 
-#Locating 8.19
-#Tracking 12.04
-#Tracking 29.43
-class Mode(Enum):
-        LOCATING = ' Locating 8.19Khz'
-        TRACKING12 = 'Tracking 12.04Khz'
-        TRACKING29 = 'Tracking 29.43Khz'
-
 message = 'TEAM1FTW'
 current_value = 0
 value0 = 0
 value1 = 0
 value_ref = 0
-current_mode = Mode.LOCATING
-
 
 def set_mode_pin(pin):
     global LOCATINGPIN, TRACKING12PIN, TRACKING28PIN
@@ -104,7 +80,7 @@ def read_adc_pipe(micros_between_readings, samples):
 def process_line(line):
     global current_value, value0, value1, value_ref, past_values0, past_values1
 
-    if line[0:2] == 'DS':
+    if line[0] == 'DS':
         timestamps0 = []
         values0 = []
         timestamps1 = []
@@ -116,6 +92,7 @@ def process_line(line):
         for sample in samples:
             try:
                 setnumber, adc, timestamp, value = sample.split(',',3)
+                print(setnumber)
                 if adc == '0':
                     timestamps0.append(int(timestamp))
                     values0.append(int(value))
@@ -184,7 +161,7 @@ def process_line(line):
             #print('v0',value0)
             #print('v1',value1)
             d1 = k/ (ratio - 1)
-            current_value = d1 / 12 #inch conversion
+            current_value = d1
         except:
             print('Error')
     #elif line != '': 
@@ -199,69 +176,30 @@ def process_queue(queue):
             else:
                 process_line(line)
 
-@app.route('/api', methods=['GET'])
-def get_value():
-    global current_mode, current_value, value0, value1, value_ref, message, gain_value, calibration_distance, calibration_value
-    return '{},{},{},{},{},{},{},{},{}'.format(current_mode.value, current_value, value0, value1, value_ref,message, gain_value, calibration_distance, calibration_value)
-
-def start_app():
-    global app
-    app.run('0.0.0.0')
-
-@app.route('/minusgain', methods=['POST'])
-def minus_gain():
-    global update_value, update_gain_request, gain_value
-    if gain_value >= 2:
-            gain_value = int(gain_value / 2)
-            update_gain_request = True
-
-@app.route('/plusgain', methods=['POST'])
-def plus_gain():
-    global update_value, update_gain_request, gain_value
-    if gain_value <= 128:
-            gain_value = gain_value * 2
-            update_gain_request = True  
-
-@app.route('/locating', methods=['POST'])
-def switch_to_locating():
-    global current_mode, update_mode_request
-    current_mode = Mode.LOCATING
-    update_mode_request = True
-
-
-@app.route('/tracking12', methods=['POST'])
-def switch_to_tracking12():
-    global current_mode, update_mode_request
-    current_mode = Mode.TRACKING12
-    update_mode_request = True   
-
-@app.route('/tracking29', methods=['POST'])
-def switch_to_tracking29():
-    global current_mode, update_mode_request
-    current_mode = Mode.TRACKING29
-    update_mode_request = True 
-
-@app.route('/calibrate', methods=['POST'])
-def calibrate():
-    global calibration_value, calibrate, update_calibration_value_request
-    calibration_value = calibration_distance
-    update_calibration_value_request
-
-@app.route('/minuscalibration', methods=['POST'])
-def minus_calibration():
-    global calibrate, update_calibration_distance_request, calibration_distance
-    if calibration_distance > 0:
-            calibration_distance -= 1
-            update_calibration_distance_request = True
-
-@app.route('/pluscalibration', methods=['POST'])
-def plus_calibration():
-    global calibrate, update_calibration_distance_request, calibration_distance
-    calibration_distance += 1
-    update_calibration_distance_request = True  
+#frequencies 
+#Locating 8.19
+#Tracking 12.04
+#Tracking 29.43
+class Mode(Enum):
+        LOCATING = ' Locating 8.19Khz'
+        TRACKING12 = 'Tracking 12.04Khz'
+        TRACKING29 = 'Tracking 29.43Khz'
 
 def main():
-    global current_value, value0, value1, value_ref, message, current_mode, calibration_distance, calibration_value, gain_value, update_mode_request, update_calibration_distance_request, update_calibration_distance_request, update_calibration_value_request
+    global current_value, value0, value1, value_ref, message
+
+    #button update requests
+    update_mode_request = True
+    current_mode = Mode.LOCATING
+
+    update_calibration_distance_request = True
+    calibration_distance = 120 #distance in inches
+
+    update_calibration_value_request = True
+    calibration_value = 1
+
+    update_gain_request = True
+    gain_value = 1
 
     #colors
     WHITE = (255, 255, 255)
@@ -372,7 +310,7 @@ def main():
         value0_rect = display_text(screen, "{:.2f}V".format(to_voltage(value0)), BLACK , BACKGROUND_COLOR, (380,85), 100, numberFont)
         value1_rect = display_text(screen, "{:.2f}V".format(to_voltage(value1)), BLACK , BACKGROUND_COLOR, (380,125), 100, numberFont)
         ref_rect = display_text(screen, "{:.2f}V".format(to_voltage(value_ref)), BLACK , BACKGROUND_COLOR, (380,165), 100, numberFont)
-        rects += [depth_rect, value0_rect, value1_rect, ref_rect, message_rect]
+        rects += [depth_rect, value0_rect, value1_rect, ref_rect]
 
         pygame.display.update(rects)
             
@@ -381,21 +319,32 @@ def main():
                 print('Click')
                 pos = pygame.mouse.get_pos()
                 if locating8_button.collidepoint(pos):
-                    switch_to_locating()
+                    current_mode = Mode.LOCATING
+                    update_mode_request = True
                 elif tracking12_button.collidepoint(pos):
-                    switch_to_tracking12() 
+                    current_mode = Mode.TRACKING12
+                    update_mode_request = True   
                 elif tracking29_button.collidepoint(pos):
-                    switch_to_tracking29()
+                    current_mode = Mode.TRACKING29
+                    update_mode_request = True 
                 elif calibration_button.collidepoint(pos):
-                    calibrate()
+                    calibration_value = calibration_distance
+                    update_calibration_value_request
                 elif minus_gain_button.collidepoint(pos):
-                    minus_gain()
+                    if gain_value >= 2:
+                        gain_value = int(gain_value / 2)
+                        update_gain_request = True
                 elif plus_gain_button.collidepoint(pos):
-                    plus_gain()
+                    if gain_value <= 128:
+                        gain_value = gain_value * 2
+                    update_gain_request = True  
                 elif minus_calibration_button.collidepoint(pos):
-                    minus_calibration()
+                    if calibration_distance > 0:
+                        calibration_distance -= 1
+                        update_calibration_distance_request = True
                 elif plus_calibration_button.collidepoint(pos):
-                    plus_calibration()     
+                    calibration_distance += 1
+                    update_calibration_distance_request = True        
             elif event.type == pygame.QUIT:
                 pygame.display.quit()
                 pygame.quit()  # Hangs here
@@ -434,10 +383,6 @@ if __name__== '__main__':
     t2 = Thread(target=process_queue, args=(q,))
     t2.daemon = True
     t2.start()
-
-    t3 = Thread(target=start_app)
-    t3.daemon = True
-    t3.start()
 
     try:
         main()

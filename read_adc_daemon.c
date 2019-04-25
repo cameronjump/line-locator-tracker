@@ -225,9 +225,9 @@ int performSampleLoop() {
 
    start = time_time();
 
-   int samplecount = 0
+   int samplecount = 0;
+   int setcount = 0;
 
-   fprintf(stderr, "DS;");
    while (sample<SAMPLES)
    {
       // Which reading is current?
@@ -255,14 +255,26 @@ int performSampleLoop() {
             // B11 B10 B9 B8 B7 B6 B5 B4 | B3 B2 B1 B0  X  X  X  X
 
             val = (rx[i*2]<<4) + (rx[(i*2)+1]>>4);
-            if (samplecount % 877 < 10) {
+            samplecount += 1;
+
+            int checkcount = samplecount % 877;
+            int checksample = samplecount % 5263;
+            if (checksample == 0) {
+               fprintf(stderr, "DS;");
+            }
+            if (checkcount == 0) {
+               setcount += 1;
+               fprintf(stderr, "%d,", setcount);
+
+            }
+            if (checkcount < 10) {
                long timestamp = getMicrotime();
                fprintf(stderr,"%d,", i);
                fprintf(stderr,"%ld,", timestamp);
                fprintf(stderr,"%d", val);
                fprintf(stderr,";");
             }
-            if (samplecount % 5263 == 0) {
+            if (checksample == 5262) {
                fprintf(stderr, "\n");
             }
          }
@@ -272,8 +284,6 @@ int performSampleLoop() {
    }
 
    end = time_time();
-
-   fprintf(stderr, "\n");
 
    printf("last value %d", val);
 
