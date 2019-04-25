@@ -2,7 +2,6 @@ from subprocess import check_output, call, Popen, PIPE, STDOUT
 import sys
 import time
 import os
-from enum import Enum
 
 from threading  import Thread
 from queue import Queue, Empty

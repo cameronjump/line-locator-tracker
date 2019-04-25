@@ -47,9 +47,9 @@ a unique MISO line.
 
 #define ADCS 3
 
-int REPEAT_MICROS = 40 ;
+int REPEAT_MICROS = 38 ;
 
-int SAMPLES = 10000;  // Number of samples to take,
+int SAMPLES = 105624;  // Number of samples to take,
 
 int SAMPLE_SET_FREQUENCY = 30;
 
@@ -225,6 +225,8 @@ int performSampleLoop() {
 
    start = time_time();
 
+   int samplecount = 0
+
    fprintf(stderr, "DS;");
    while (sample<SAMPLES)
    {
@@ -253,11 +255,16 @@ int performSampleLoop() {
             // B11 B10 B9 B8 B7 B6 B5 B4 | B3 B2 B1 B0  X  X  X  X
 
             val = (rx[i*2]<<4) + (rx[(i*2)+1]>>4);
-            long timestamp = getMicrotime();
-            fprintf(stderr,"%d,", i);
-            fprintf(stderr,"%ld,", timestamp);
-            fprintf(stderr,"%d", val);
-            fprintf(stderr,";");
+            if (samplecount % 877 < 10) {
+               long timestamp = getMicrotime();
+               fprintf(stderr,"%d,", i);
+               fprintf(stderr,"%ld,", timestamp);
+               fprintf(stderr,"%d", val);
+               fprintf(stderr,";");
+            }
+            if (samplecount % 5263 == 0) {
+               fprintf(stderr, "\n");
+            }
          }
 
          if (++reading >= BUFFER) reading = 0;

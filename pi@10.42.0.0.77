@@ -52,7 +52,6 @@ def set_mode_pin(pin):
 def set_gain(b):
     global GAINCSPIN, GAINCLKPIN, GAINDATAPIN
     b = "0000" "00" "{0:010b}".format(b)
-    print(str(b))
 
     GPIO.output(GAINCSPIN, GPIO.LOW)
     for x in b:
@@ -134,8 +133,8 @@ def process_line(line):
 
 
         #print(str(voltages[index_max]) + 'V', str(timestamps[index_max]) + 'us')
-        past_values0.append(max(adjusted_values0))
-        past_values1.append(max(adjusted_values1))
+        past_values0.append(sum(adjusted_values0)/len(adjusted_values0))
+        past_values1.append(sum(adjusted_values1)/len(adjusted_values1))
         past_values_ref.append(reference_value)
 
         if(len(past_values0) > 10):
@@ -198,7 +197,7 @@ def main():
     calibration_value = 1
 
     update_gain_request = True
-    gain_value = 1
+    gain_value = 10
 
     #colors
     WHITE = (255, 255, 255)
@@ -298,7 +297,7 @@ def main():
         if update_gain_request:
             text_surface = textFont.render(str(gain_value), False, BLACK)
             set_gain(gain_value)
-            gain_rect = pygame.Rect((73,280), (30,20))
+            gain_rect = pygame.Rect((77,280), (30,20))
             screen.fill(BACKGROUND_COLOR, gain_rect)
             screen.blit(text_surface,(77,280))
             rects.append(gain_rect)
@@ -330,12 +329,11 @@ def main():
                     calibration_value = calibration_distance
                     update_calibration_value_request
                 elif minus_gain_button.collidepoint(pos):
-                    if gain_value >= 2:
-                        gain_value = int(gain_value / 2)
+                    if gain_value > 0:
+                        gain_value -= 1
                         update_gain_request = True
                 elif plus_gain_button.collidepoint(pos):
-                    if gain_value <= 128:
-                        gain_value = gain_value * 2
+                    gain_value += 1
                     update_gain_request = True  
                 elif minus_calibration_button.collidepoint(pos):
                     if calibration_distance > 0:
