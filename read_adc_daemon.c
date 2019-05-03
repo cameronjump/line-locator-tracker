@@ -47,7 +47,7 @@ a unique MISO line.
 
 #define ADCS 3
 
-int REPEAT_MICROS = 38 ;
+int REPEAT_MICROS = 40;
 
 int SAMPLES = 105624;  // Number of samples to take,
 

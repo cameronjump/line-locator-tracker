@@ -107,6 +107,8 @@ def read_adc_pipe(micros_between_readings, samples):
 def process_line(line):
     global current_value, value0, value1, value_ref, past_values0, past_values1, dpsk_array, message
 
+    DEBUG = True
+
     if line[0:2] == 'DS':
         timestamps0 = []
         values0 = []
@@ -118,12 +120,12 @@ def process_line(line):
         samples = line.split(';')
         for sample in samples:
             try:
-                print(sample)
+                if DEBUG: print('Sample',sample)
                 adc, timestamp, value = sample.split(',') 
-                print(adc)
+                if DEBUG: print('ADC',adc)
                 if "A" in adc:
                     sampleset, adc = adc.split('A')
-                    print(sampleset, adc)
+                    print('SAMPLESET ADC',sampleset, adc)
                     if sampleset == 0 and len(dpsk_array) != 0:
                         dpsk_array.clear()
                 if adc == '0':
@@ -164,8 +166,8 @@ def process_line(line):
             dpsk_array.append(timestamps0[index_of_max(adjusted_values0)])
 
             if len(dpsk_array) >= 361:
+                if DEBUG: print('DPSK ARRAY', dpsk_array)
                 dpsk_array0 = list(map(lambda x: x-dpsk_array[0], dpsk_array))
-                print(dpsk_array)
                 lowbound = 21
                 highbound = 62
                 mod = 83
@@ -178,13 +180,14 @@ def process_line(line):
                 for stamp in dpsk_array:
                     phases.append(inPhase(basetime, stamp, 21, 62, 83))
                 dpsk_string = phase_array_to_dpsk_string(phases)
+                if DEBUG: print('DPSK ARRAY', dpsk_array)
                 try:
                     start_index = dpskstring.index('11111110', lastindex)
                     bits, output = retrieve_message(dpsk_string, start_index)  
-                    print(bits, output)
+                    if DEBUG: print('BITS OUTPUT', bits, output)
                     message = output
-                except:
-                    print('No message found')
+                except Exeception as e:
+                    print(str(e))
             dpsk_array.clear()
 
 
@@ -192,11 +195,11 @@ def process_line(line):
         past_values1.append(max(adjusted_values1))
         past_values_ref.append(reference_value)
 
-        if(len(past_values0) > 10):
+        if(len(past_values0) > 20):
             del past_values0[0]
-        if(len(past_values1) > 10):
+        if(len(past_values1) > 20):
             del past_values1[0]
-        if(len(past_values_ref) > 10):
+        if(len(past_values_ref) > 20):
             del past_values_ref[0]
 
         value0 = sum(past_values0)/len(past_values0)
