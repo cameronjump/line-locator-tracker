@@ -32,26 +32,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        ip_edit.append(getString(R.string.default_ip))
-        service = APIService.create("http://"+ip_edit.text.toString()+":5000")
-
-        ip_edit.addTextChangedListener(object: TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                val ip = "http://"+ip_edit.text.toString()+":5000"
-                when (URLUtil.isValidUrl(ip) && ip_edit.text.toString() != "") {
-                    true -> {
-                        run = true
-                        concurrentFails = 0
-                        service = APIService.create(ip)
-                        Log.d(TAG, ip)}
-                    }
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            }
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            }
-        })
+        service = APIService.create("http://10.0.0.1:5000")
 
         callAsynchronousTask()
     }
@@ -81,9 +62,19 @@ class MainActivity : AppCompatActivity() {
                 .subscribe(
                     { result -> Log.d(TAG, result.toString())
                         concurrentFails = 0
-                        mode_text.text = result.mode
-                        value_text.text = "%s%s".format(result.value, result.unit)
-                        extra_text.text = result.extra
+                        val values = result.split(',')
+                        val current_mode = values[0]
+                        val current_value = values[1]
+                        val value0 = values[2]
+                        val value1 = values[3]
+                        val value_ref = values[4]
+                        val message = values[5]
+                        val gain_value = values[6]
+                        val calibration_distance = values[7]
+                        val calibration_value = values[8]
+                        mode_text.text = current_mode
+                        value_text.text = "%s%s".format(current_value, "ft")
+                        extra_text.text = "%s\n%s\n%s".format(value0, value1, value_ref)
                         status_text.background = getDrawable(R.drawable.status_on)
                         status_text.text = "Connected"
                     },

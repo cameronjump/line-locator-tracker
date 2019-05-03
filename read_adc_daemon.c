@@ -264,7 +264,7 @@ int performSampleLoop() {
             }
             if (checkcount == 0) {
                setcount += 1;
-               fprintf(stderr, "%d,", setcount);
+               fprintf(stderr, "%dA", setcount);
 
             }
             if (checkcount < 10) {

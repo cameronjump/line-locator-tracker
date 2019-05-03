@@ -30,6 +30,8 @@ past_values0 = []
 past_values1 = []
 past_values_ref = []
 
+dpsk_array = []
+
 LOCATINGPIN = 12
 TRACKING12PIN = 16
 TRACKING28PIN = 21
@@ -74,9 +76,10 @@ def set_mode_pin(pin):
     GPIO.output(pin, GPIO.HIGH)
 
 def set_gain(b):
+    if b == 256:
+        b == 255
     global GAINCSPIN, GAINCLKPIN, GAINDATAPIN
     b = "0000" "00" "{0:010b}".format(b)
-    print(str(b))
 
     GPIO.output(GAINCSPIN, GPIO.LOW)
     for x in b:
@@ -102,7 +105,7 @@ def read_adc_pipe(micros_between_readings, samples):
             process_line(line)
 
 def process_line(line):
-    global current_value, value0, value1, value_ref, past_values0, past_values1
+    global current_value, value0, value1, value_ref, past_values0, past_values1, dpsk_array, message
 
     if line[0:2] == 'DS':
         timestamps0 = []
@@ -115,7 +118,14 @@ def process_line(line):
         samples = line.split(';')
         for sample in samples:
             try:
-                setnumber, adc, timestamp, value = sample.split(',',3)
+                print(sample)
+                adc, timestamp, value = sample.split(',') 
+                print(adc)
+                if "A" in adc:
+                    sampleset, adc = adc.split('A')
+                    print(sampleset, adc)
+                    if sampleset == 0 and len(dpsk_array) != 0:
+                        dpsk_array.clear()
                 if adc == '0':
                     timestamps0.append(int(timestamp))
                     values0.append(int(value))
@@ -149,15 +159,35 @@ def process_line(line):
         adjusted_values0 = list(map(abs, adjusted_values0))
         adjusted_values1 = list(map(abs, adjusted_values1))
 
-        #print(string_format_voltages(voltages0))
-        #print(string_format_voltages(voltages1))
+        #DPSK
+        if current_mode != Mode.LOCATING:
+            dpsk_array.append(timestamps0[index_of_max(adjusted_values0)])
 
-        #index_max0 = index_of_max(values0)
-        #index_max1 = index_of_max(values1)
-        #index_max2 = index_of_max(values_ref)
+            if len(dpsk_array) >= 361:
+                dpsk_array0 = list(map(lambda x: x-dpsk_array[0], dpsk_array))
+                print(dpsk_array)
+                lowbound = 21
+                highbound = 62
+                mod = 83
+                if current_mode == Mode.TRACKING29:
+                    lowbound = 8
+                    highbound = 26
+                    mod = 34
+                phases = []
+                basetime = dpsk_array[0]
+                for stamp in dpsk_array:
+                    phases.append(inPhase(basetime, stamp, 21, 62, 83))
+                dpsk_string = phase_array_to_dpsk_string(phases)
+                try:
+                    start_index = dpskstring.index('11111110', lastindex)
+                    bits, output = retrieve_message(dpsk_string, start_index)  
+                    print(bits, output)
+                    message = output
+                except:
+                    print('No message found')
+            dpsk_array.clear()
 
 
-        #print(str(voltages[index_max]) + 'V', str(timestamps[index_max]) + 'us')
         past_values0.append(max(adjusted_values0))
         past_values1.append(max(adjusted_values1))
         past_values_ref.append(reference_value)
@@ -173,22 +203,22 @@ def process_line(line):
         value1 = sum(past_values1)/len(past_values1)
         value_ref = sum(past_values_ref)/len(past_values_ref)
 
-        #print('0',past_values0)
-        #print('1',past_values1)
-        #print('2',past_values_ref)
+        if current_mode == Mode.LOCATING:
+            k = 1.00
+            try:
+                ratio = to_voltage(value0)/to_voltage(value1)
+                d1 = k/ (ratio - 1)
+                current_value = d1
+            except:
+                print('Divide by 0 error')
+        else:
+            denom = value0 / (gain_value * .390625)
+            ratio = calibration_value / denom
+            depth = ratio ** (1. / 3)
+            current_value = depth / 12
 
-        k = 3.78125 #in
-        #s1 value 0, s2 value1, ref value3
-        try:
-            ratio = to_voltage(value0)/to_voltage(value1)
-            #print('v0',value0)
-            #print('v1',value1)
-            d1 = k/ (ratio - 1)
-            current_value = d1 / 12 #inch conversion
-        except:
-            print('Error')
-    #elif line != '': 
-    #    print(line)
+
+
 
 def process_queue(queue):
      while True:
@@ -243,8 +273,10 @@ def switch_to_tracking29():
 
 @app.route('/calibrate', methods=['POST'])
 def calibrate():
-    global calibration_value, calibrate, update_calibration_value_request
-    calibration_value = calibration_distance
+    global calibration_value, calibration_distance, update_calibration_value_request, past_values0, gain_value
+    sreading = sum(past_values0)/len(past_values0)
+    d3 = calibration_distance * calibration_distance * calibration_distance
+    calibration_value = d3 * (sreading / (.390625 * gain_value))
     update_calibration_value_request
 
 @app.route('/minuscalibration', methods=['POST'])
@@ -261,7 +293,7 @@ def plus_calibration():
     update_calibration_distance_request = True  
 
 def main():
-    global current_value, value0, value1, value_ref, message, current_mode, calibration_distance, calibration_value, gain_value, update_mode_request, update_calibration_distance_request, update_calibration_distance_request, update_calibration_value_request
+    global current_value, value0, value1, value_ref, message, current_mode, calibration_distance, calibration_value, gain_value, update_mode_request, update_calibration_distance_request, update_calibration_distance_request, update_calibration_value_request, dpsk_array
 
     #colors
     WHITE = (255, 255, 255)
@@ -326,6 +358,7 @@ def main():
 
         if update_mode_request:
             print(current_mode.value)
+            dpsk_array.clear()
             current_mode_rect = display_text(screen, current_mode.value, BLACK , BACKGROUND_COLOR, (300,10), 180, textFont)
             rects.append(current_mode_rect)
             if current_mode == Mode.TRACKING12:
@@ -350,7 +383,7 @@ def main():
             if calibration_value == 1:
                 calibration_string = 'Calibration Value = UNSET'
             else:
-                calibration_string = 'Calibration Value = {}'.format(calibration_value)
+                calibration_string = 'Calibration Value = SET'
             text_surface = buttonFont.render(calibration_string, False, BLACK)
             calibration_value_rect = pygame.Rect((150,15), (140,20))
             screen.fill(BACKGROUND_COLOR, calibration_value_rect)
@@ -378,7 +411,6 @@ def main():
             
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONUP:
-                print('Click')
                 pos = pygame.mouse.get_pos()
                 if locating8_button.collidepoint(pos):
                     switch_to_locating()

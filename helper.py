@@ -32,3 +32,37 @@ def create_button(screen, text, fontColor, buttonColor, location, size, font):
     screen.fill(buttonColor, button_rect)
     screen.blit(text_surface, text_rect)
     return button_rect    
+
+def get_index_and_max(values):
+    return max(range(len(values)), key=values.__getitem__) , max(values)
+
+def inPhase(basetime, timestamp, lowbound, highbound, mod):
+    check  = (timestamp-basetime)%mod
+    if check > highbound or check < lowbound:
+        return 0 #phase 0
+    else:
+        return 1 #phase 1
+
+def phase_array_to_dpsk_string(phase_array):
+    dpskstring = ''
+    for i in range(0, len(phase_array)):
+        if i< len(phase_array)-1:
+            if (phase_array[i] != phase_array[i+1]):
+                dpskstring += '1'
+            else:
+                dpskstring += '0'
+    return dpskstring
+
+def retrieve_message(dpskstring, startindex):
+    if len(dpskstring)-52 < startindex:
+        return False
+    bits = dpskstring[startindex:startindex+53]
+    message = ''
+    for i in range(0,13):
+        byte = bits[(i*4):(i*4)+4]
+        hexed = hex(int(byte,2))
+        formatted = hexed[2]
+        message += formatted
+    #add the last bit
+    message += hex(int(str(bits[52])+'000',2))[2]
+    return bits, message

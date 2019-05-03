@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#FF3D00</color>
-    <color name="colorPrimaryDark">#FF6E40</color>
+    <color name="colorPrimary">#FF7D19</color>
+    <color name="colorPrimaryDark">#000000</color>
     <color name="colorAccent">#808080</color>
     <color name="statusConnected">#03a9f4</color>
     <color name="statusDisconnected">#f44336</color>

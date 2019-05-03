@@ -125,7 +125,7 @@ def main():
         if calibration_value == 1:
             calibration_string = 'Calibration Value = UNSET'
         else:
-            calibration_string = 'Calibration Value = {}'.format(calibration_value)
+            calibration_string = 'Calibration Value = SET'
         text_surface = buttonFont.render(calibration_string, False, BLACK)
         calibration_value_rect = pygame.Rect((150,15), (140,20))
         screen.fill(BACKGROUND_COLOR, calibration_value_rect)
@@ -152,22 +152,25 @@ def main():
             if event.type == pygame.MOUSEBUTTONUP:
                 print('Click')
                 pos = pygame.mouse.get_pos()
-                if locating8_button.collidepoint(pos):
-                    requests.post('{}/locating'.format(url))
-                elif tracking12_button.collidepoint(pos):
-                    requests.post('{}/tracking12'.format(url))
-                elif tracking29_button.collidepoint(pos):
-                    requests.post('{}/tracking29'.format(url))
-                elif calibration_button.collidepoint(pos):
-                    requests.post('{}/calibrate'.format(url))
-                elif minus_gain_button.collidepoint(pos):
-                    requests.post('{}/minusgain'.format(url))
-                elif plus_gain_button.collidepoint(pos):
-                    requests.post('{}/plusgain'.format(url))
-                elif minus_calibration_button.collidepoint(pos):
-                    requests.post('{}/minuscalibration'.format(url))
-                elif plus_calibration_button.collidepoint(pos):
-                    requests.post('{}/pluscalibration'.format(url))    
+                try:
+                    if locating8_button.collidepoint(pos):
+                        requests.post('{}/locating'.format(url))
+                    elif tracking12_button.collidepoint(pos):
+                        requests.post('{}/tracking12'.format(url))
+                    elif tracking29_button.collidepoint(pos):
+                        requests.post('{}/tracking29'.format(url))
+                    elif calibration_button.collidepoint(pos):
+                        requests.post('{}/calibrate'.format(url))
+                    elif minus_gain_button.collidepoint(pos):
+                        requests.post('{}/minusgain'.format(url))
+                    elif plus_gain_button.collidepoint(pos):
+                        requests.post('{}/plusgain'.format(url))
+                    elif minus_calibration_button.collidepoint(pos):
+                        requests.post('{}/minuscalibration'.format(url))
+                    elif plus_calibration_button.collidepoint(pos):
+                        requests.post('{}/pluscalibration'.format(url))   
+                except:
+                    print('Connection failed') 
             elif event.type == pygame.QUIT:
                 pygame.display.quit()
                 pygame.quit()  # Hangs here

@@ -7,16 +7,6 @@
         android:layout_height="match_parent"
         tools:context=".MainActivity">
 
-    <EditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:hint="IP Address"
-            android:id="@+id/ip_edit"
-            android:layout_margin="20dp"/>
-
     <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -31,7 +21,7 @@
             android:layout_margin="20dp"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/ip_edit"/>
+            app:layout_constraintTop_toTopOf="parent"/>
 
     <TextView
             android:layout_width="wrap_content"
@@ -65,5 +55,6 @@
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@id/value_text"/>
+
 
 </android.support.constraint.ConstraintLayout>

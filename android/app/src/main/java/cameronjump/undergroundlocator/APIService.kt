@@ -10,7 +10,7 @@ import retrofit2.http.GET
 interface APIService {
 
     @GET("/api")
-    fun getValue() : Observable<Data>
+    fun getValue() : Observable<String>
 
     companion object {
         fun create(ip: String): APIService {
@@ -24,10 +24,4 @@ interface APIService {
             return retrofit.create(APIService::class.java)
         }
     }
-
-    data class Data(
-        @SerializedName("mode") val mode:String,
-        @SerializedName("value") val value:String,
-        @SerializedName("unit") val unit:String,
-        @SerializedName("extra") val extra:String)
 }
