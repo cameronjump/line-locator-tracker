@@ -161,9 +161,24 @@ def process_line(line):
         adjusted_values0 = list(map(abs, adjusted_values0))
         adjusted_values1 = list(map(abs, adjusted_values1))
 
+        past_values0.append(max(adjusted_values0))
+        past_values1.append(max(adjusted_values1))
+        past_values_ref.append(reference_value)
+
+        if(len(past_values0) > 20):
+            del past_values0[0]
+        if(len(past_values1) > 20):
+            del past_values1[0]
+        if(len(past_values_ref) > 20):
+            del past_values_ref[0]
+
+        value0 = sum(past_values0)/len(past_values0)
+        value1 = sum(past_values1)/len(past_values1)
+        value_ref = sum(past_values_ref)/len(past_values_ref)
+
         #DPSK
         if current_mode != Mode.LOCATING:
-            dpsk_array.append(timestamps0[index_of_max(adjusted_values0)])
+            dpsk_array.append(timestamps0[index_of_max(alues0)])
 
             if len(dpsk_array) >= 361:
                 if DEBUG: print('DPSK ARRAY', dpsk_array)
@@ -188,23 +203,8 @@ def process_line(line):
                     message = output
                 except Exeception as e:
                     print(str(e))
+                    message = dpsk_string
             dpsk_array.clear()
-
-
-        past_values0.append(max(adjusted_values0))
-        past_values1.append(max(adjusted_values1))
-        past_values_ref.append(reference_value)
-
-        if(len(past_values0) > 20):
-            del past_values0[0]
-        if(len(past_values1) > 20):
-            del past_values1[0]
-        if(len(past_values_ref) > 20):
-            del past_values_ref[0]
-
-        value0 = sum(past_values0)/len(past_values0)
-        value1 = sum(past_values1)/len(past_values1)
-        value_ref = sum(past_values_ref)/len(past_values_ref)
 
         if current_mode == Mode.LOCATING:
             k = 1.00
